@@ -1,0 +1,12 @@
+name: segformer
+dependencies:
+  - python=3.9.7
+  - pip=21.2.4
+  - pytest=6.2.5
+  - pytorch::pytorch=1.10.0
+  - pytorch::torchvision=0.11.1
+  - cudatoolkit=11.3.1
+  - numpy=1.21.2
+  - pip:
+    - mmcv-full==1.4.2 -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.10.0/index.html
+    - mmsegmentation==0.20.2
