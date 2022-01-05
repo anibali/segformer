@@ -200,7 +200,7 @@ class OverlapPatchEmbed(nn.Module):
 
 
 class MixVisionTransformer(nn.Module):
-    def __init__(self, img_size=224, patch_size=16, in_chans=3, num_classes=1000, embed_dims=[64, 128, 256, 512],
+    def __init__(self, img_size=224, in_chans=3, num_classes=1000, embed_dims=[64, 128, 256, 512],
                  num_heads=[1, 2, 4, 8], mlp_ratios=[4, 4, 4, 4], qkv_bias=False, qk_scale=None, drop_rate=0.,
                  attn_drop_rate=0., drop_path_rate=0., norm_layer=nn.LayerNorm,
                  depths=[3, 4, 6, 3], sr_ratios=[8, 4, 2, 1]):
@@ -363,50 +363,39 @@ class DWConv(nn.Module):
         return x
 
 
-
-class mit_b0(MixVisionTransformer):
-    def __init__(self):
-        super(mit_b0, self).__init__(
-            patch_size=4, embed_dims=[32, 64, 160, 256], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
-            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 2, 2], sr_ratios=[8, 4, 2, 1],
-            drop_rate=0.0, drop_path_rate=0.1)
-
-
-class mit_b1(MixVisionTransformer):
-    def __init__(self):
-        super(mit_b1, self).__init__(
-            patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
-            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 2, 2], sr_ratios=[8, 4, 2, 1],
-            drop_rate=0.0, drop_path_rate=0.1)
+def _mit_bx(embed_dims, depths):
+    return MixVisionTransformer(
+        embed_dims=embed_dims,
+        num_heads=[1, 2, 5, 8],
+        mlp_ratios=[4, 4, 4, 4],
+        qkv_bias=True,
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),
+        depths=depths,
+        sr_ratios=[8, 4, 2, 1],
+        drop_rate=0.0,
+        drop_path_rate=0.1,
+    )
 
 
-class mit_b2(MixVisionTransformer):
-    def __init__(self):
-        super(mit_b2, self).__init__(
-            patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
-            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 4, 6, 3], sr_ratios=[8, 4, 2, 1],
-            drop_rate=0.0, drop_path_rate=0.1)
+def mit_b0():
+    return _mit_bx(embed_dims=[32, 64, 160, 256], depths=[2, 2, 2, 2])
 
 
-class mit_b3(MixVisionTransformer):
-    def __init__(self):
-        super(mit_b3, self).__init__(
-            patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
-            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 4, 18, 3], sr_ratios=[8, 4, 2, 1],
-            drop_rate=0.0, drop_path_rate=0.1)
+def mit_b1():
+    return _mit_bx(embed_dims=[64, 128, 320, 512], depths=[2, 2, 2, 2])
 
 
-class mit_b4(MixVisionTransformer):
-    def __init__(self):
-        super(mit_b4, self).__init__(
-            patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
-            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 8, 27, 3], sr_ratios=[8, 4, 2, 1],
-            drop_rate=0.0, drop_path_rate=0.1)
+def mit_b2():
+    return _mit_bx(embed_dims=[64, 128, 320, 512], depths=[3, 4, 6, 3])
 
 
-class mit_b5(MixVisionTransformer):
-    def __init__(self):
-        super(mit_b5, self).__init__(
-            patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
-            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 6, 40, 3], sr_ratios=[8, 4, 2, 1],
-            drop_rate=0.0, drop_path_rate=0.1)
+def mit_b3():
+    return _mit_bx(embed_dims=[64, 128, 320, 512], depths=[3, 4, 18, 3])
+
+
+def mit_b4():
+    return _mit_bx(embed_dims=[64, 128, 320, 512], depths=[3, 8, 27, 3])
+
+
+def mit_b5():
+    return _mit_bx(embed_dims=[64, 128, 320, 512], depths=[3, 6, 40, 3])
