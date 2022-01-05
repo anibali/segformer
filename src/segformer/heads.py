@@ -57,12 +57,11 @@ class SegFormerHead(nn.Module):
 
         self.in_channels = in_channels
         self.channels = channels
-        self.num_classes = num_classes
+        self.embed_dim = embed_dim
         self.dropout_ratio = dropout_ratio
 
         self.align_corners = align_corners
 
-        self.conv_seg = nn.Conv2d(channels, num_classes, kernel_size=1)
         if dropout_ratio > 0:
             self.dropout = nn.Dropout2d(dropout_ratio)
         else:
@@ -85,7 +84,11 @@ class SegFormerHead(nn.Module):
             kernel_size=1,
         )
 
-        self.linear_pred = nn.Conv2d(embed_dim, self.num_classes, kernel_size=1)
+        self.rebuild_output_layer_(num_classes)
+
+    def rebuild_output_layer_(self, num_classes):
+        self.linear_pred = nn.Conv2d(self.embed_dim, num_classes, kernel_size=(1, 1))
+        self.num_classes = num_classes
 
     def forward(self, x):
         c1, c2, c3, c4 = x  # 1/4,1/8,1/16,1/32

@@ -2,7 +2,8 @@ import torch
 from torch import nn
 from torch.nn.functional import interpolate
 
-from segformer.backbones import mit_b0, mit_b1, mit_b2, mit_b3, mit_b4, mit_b5
+from segformer.backbones import mit_b0, mit_b1, mit_b2, mit_b3, mit_b4, mit_b5, \
+    MixVisionTransformer
 from segformer.heads import SegFormerHead
 
 model_urls = {
@@ -37,12 +38,18 @@ model_urls = {
 
 
 class SegFormer(nn.Module):
-    def __init__(self, backbone, decode_head):
+    def __init__(self, backbone: MixVisionTransformer, decode_head: SegFormerHead):
         super().__init__()
         self.backbone = backbone
         self.decode_head = decode_head
-        self.align_corners = self.decode_head.align_corners
-        self.num_classes = self.decode_head.num_classes
+
+    @property
+    def align_corners(self):
+        return self.decode_head.align_corners
+
+    @property
+    def num_classes(self):
+        return self.decode_head.num_classes
 
     def forward(self, x):
         image_hw = x.shape[2:]
@@ -138,10 +145,14 @@ def create_segformer_b5(num_classes):
 
 def _load_pretrained_weights_(model, model_url, progress):
     state_dict = torch.hub.load_state_dict_from_url(model_url, progress=progress)
+    state_dict.pop('decode_head.conv_seg.weight', None)
+    state_dict.pop('decode_head.conv_seg.bias', None)
     model.load_state_dict(state_dict)
 
 
 def segformer_b0_ade(pretrained=False, progress=True):
+    """Create a SegFormer-B0 model for the ADE20K segmentation task.
+    """
     model = create_segformer_b0(num_classes=150)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['ade']['segformer_b0'], progress=progress)
@@ -149,6 +160,8 @@ def segformer_b0_ade(pretrained=False, progress=True):
 
 
 def segformer_b1_ade(pretrained=False, progress=True):
+    """Create a SegFormer-B1 model for the ADE20K segmentation task.
+    """
     model = create_segformer_b1(num_classes=150)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['ade']['segformer_b1'], progress=progress)
@@ -156,6 +169,8 @@ def segformer_b1_ade(pretrained=False, progress=True):
 
 
 def segformer_b2_ade(pretrained=False, progress=True):
+    """Create a SegFormer-B2 model for the ADE20K segmentation task.
+    """
     model = create_segformer_b2(num_classes=150)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['ade']['segformer_b2'], progress=progress)
@@ -163,6 +178,8 @@ def segformer_b2_ade(pretrained=False, progress=True):
 
 
 def segformer_b3_ade(pretrained=False, progress=True):
+    """Create a SegFormer-B3 model for the ADE20K segmentation task.
+    """
     model = create_segformer_b3(num_classes=150)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['ade']['segformer_b3'], progress=progress)
@@ -170,6 +187,8 @@ def segformer_b3_ade(pretrained=False, progress=True):
 
 
 def segformer_b4_ade(pretrained=False, progress=True):
+    """Create a SegFormer-B4 model for the ADE20K segmentation task.
+    """
     model = create_segformer_b4(num_classes=150)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['ade']['segformer_b4'], progress=progress)
@@ -177,6 +196,8 @@ def segformer_b4_ade(pretrained=False, progress=True):
 
 
 def segformer_b5_ade(pretrained=False, progress=True):
+    """Create a SegFormer-B5 model for the ADE20K segmentation task.
+    """
     model = create_segformer_b5(num_classes=150)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['ade']['segformer_b5'], progress=progress)
@@ -184,6 +205,8 @@ def segformer_b5_ade(pretrained=False, progress=True):
 
 
 def segformer_b0_city(pretrained=False, progress=True):
+    """Create a SegFormer-B0 model for the CityScapes segmentation task.
+    """
     model = create_segformer_b0(num_classes=19)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['city']['segformer_b0'], progress=progress)
@@ -191,6 +214,8 @@ def segformer_b0_city(pretrained=False, progress=True):
 
 
 def segformer_b1_city(pretrained=False, progress=True):
+    """Create a SegFormer-B1 model for the CityScapes segmentation task.
+    """
     model = create_segformer_b1(num_classes=19)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['city']['segformer_b1'], progress=progress)
@@ -198,6 +223,8 @@ def segformer_b1_city(pretrained=False, progress=True):
 
 
 def segformer_b2_city(pretrained=False, progress=True):
+    """Create a SegFormer-B2 model for the CityScapes segmentation task.
+    """
     model = create_segformer_b2(num_classes=19)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['city']['segformer_b2'], progress=progress)
@@ -205,6 +232,8 @@ def segformer_b2_city(pretrained=False, progress=True):
 
 
 def segformer_b3_city(pretrained=False, progress=True):
+    """Create a SegFormer-B3 model for the CityScapes segmentation task.
+    """
     model = create_segformer_b3(num_classes=19)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['city']['segformer_b3'], progress=progress)
@@ -212,6 +241,8 @@ def segformer_b3_city(pretrained=False, progress=True):
 
 
 def segformer_b4_city(pretrained=False, progress=True):
+    """Create a SegFormer-B4 model for the CityScapes segmentation task.
+    """
     model = create_segformer_b4(num_classes=19)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['city']['segformer_b4'], progress=progress)
@@ -219,6 +250,8 @@ def segformer_b4_city(pretrained=False, progress=True):
 
 
 def segformer_b5_city(pretrained=False, progress=True):
+    """Create a SegFormer-B5 model for the CityScapes segmentation task.
+    """
     model = create_segformer_b5(num_classes=19)
     if pretrained:
         _load_pretrained_weights_(model, model_urls['city']['segformer_b5'], progress=progress)
@@ -226,6 +259,13 @@ def segformer_b5_city(pretrained=False, progress=True):
 
 
 def segformer_b0(pretrained=False, progress=True, num_classes=150):
+    """Create a SegFormer-B0 model.
+
+    Args:
+        pretrained: Download backbone weights pretrained on ImageNet data if true.
+        progress: Display the download progress of pretrained weights if true.
+        num_classes: Number of output classes;.
+    """
     model = create_segformer_b0(num_classes=num_classes)
     if pretrained:
         _load_pretrained_weights_(model.backbone, model_urls['imagenet']['segformer_b0'],
@@ -234,6 +274,13 @@ def segformer_b0(pretrained=False, progress=True, num_classes=150):
 
 
 def segformer_b1(pretrained=False, progress=True, num_classes=150):
+    """Create a SegFormer-B1 model.
+
+    Args:
+        pretrained: Download backbone weights pretrained on ImageNet data if true.
+        progress: Display the download progress of pretrained weights if true.
+        num_classes: Number of output classes;.
+    """
     model = create_segformer_b1(num_classes=num_classes)
     if pretrained:
         _load_pretrained_weights_(model.backbone, model_urls['imagenet']['segformer_b1'],
@@ -242,6 +289,13 @@ def segformer_b1(pretrained=False, progress=True, num_classes=150):
 
 
 def segformer_b2(pretrained=False, progress=True, num_classes=150):
+    """Create a SegFormer-B2 model.
+
+    Args:
+        pretrained: Download backbone weights pretrained on ImageNet data if true.
+        progress: Display the download progress of pretrained weights if true.
+        num_classes: Number of output classes;.
+    """
     model = create_segformer_b2(num_classes=num_classes)
     if pretrained:
         _load_pretrained_weights_(model.backbone, model_urls['imagenet']['segformer_b2'],
@@ -250,6 +304,13 @@ def segformer_b2(pretrained=False, progress=True, num_classes=150):
 
 
 def segformer_b3(pretrained=False, progress=True, num_classes=150):
+    """Create a SegFormer-B3 model.
+
+    Args:
+        pretrained: Download backbone weights pretrained on ImageNet data if true.
+        progress: Display the download progress of pretrained weights if true.
+        num_classes: Number of output classes;.
+    """
     model = create_segformer_b3(num_classes=num_classes)
     if pretrained:
         _load_pretrained_weights_(model.backbone, model_urls['imagenet']['segformer_b3'],
@@ -258,6 +319,13 @@ def segformer_b3(pretrained=False, progress=True, num_classes=150):
 
 
 def segformer_b4(pretrained=False, progress=True, num_classes=150):
+    """Create a SegFormer-B4 model.
+
+    Args:
+        pretrained: Download backbone weights pretrained on ImageNet data if true.
+        progress: Display the download progress of pretrained weights if true.
+        num_classes: Number of output classes;.
+    """
     model = create_segformer_b4(num_classes=num_classes)
     if pretrained:
         _load_pretrained_weights_(model.backbone, model_urls['imagenet']['segformer_b4'],
@@ -266,6 +334,13 @@ def segformer_b4(pretrained=False, progress=True, num_classes=150):
 
 
 def segformer_b5(pretrained=False, progress=True, num_classes=150):
+    """Create a SegFormer-B5 model.
+
+    Args:
+        pretrained: Download backbone weights pretrained on ImageNet data if true.
+        progress: Display the download progress of pretrained weights if true.
+        num_classes: Number of output classes;.
+    """
     model = create_segformer_b5(num_classes=num_classes)
     if pretrained:
         _load_pretrained_weights_(model.backbone, model_urls['imagenet']['segformer_b5'],
