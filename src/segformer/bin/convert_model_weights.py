@@ -35,11 +35,15 @@ def main(args):
     if match:
         stem = f'segformer_{match[1]}_backbone_imagenet'
         state_dict = data
+        # Remove parameters that are not actually used by the model.
         del state_dict['head.weight']
         del state_dict['head.bias']
     else:
         stem = os.path.splitext(os.path.basename(opts.input))[0].replace('.', '_')
         state_dict = data['state_dict']
+        # Remove parameters that are not actually used by the model.
+        del state_dict['decode_head.conv_seg.weight']
+        del state_dict['decode_head.conv_seg.bias']
 
     torch.save(state_dict, tmp_file)
     sha256 = hashlib.sha256()
