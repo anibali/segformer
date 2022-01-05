@@ -1,6 +1,6 @@
 import torch
-from mmcv import ConfigDict
-from mmseg.models import EncoderDecoder, BaseSegmentor
+from torch import nn
+from torch.nn.functional import interpolate
 
 from segformer.backbones import mit_b0, mit_b1, mit_b2, mit_b3, mit_b4, mit_b5
 from segformer.heads import SegFormerHead
@@ -36,122 +36,104 @@ model_urls = {
 }
 
 
-class SegFormer(EncoderDecoder):
-    def __init__(self, backbone, decode_head, train_cfg=None, test_cfg=None):
-        BaseSegmentor.__init__(self)
-
+class SegFormer(nn.Module):
+    def __init__(self, backbone, decode_head):
+        super().__init__()
         self.backbone = backbone
         self.decode_head = decode_head
         self.align_corners = self.decode_head.align_corners
         self.num_classes = self.decode_head.num_classes
-        self._init_auxiliary_head(None)
 
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-
-        assert self.with_decode_head
+    def forward(self, x):
+        image_hw = x.shape[2:]
+        x = self.backbone(x)
+        x = self.decode_head(x)
+        x = interpolate(x, size=image_hw, mode='bilinear', align_corners=self.align_corners)
+        return x
 
 
 def create_segformer_b0(num_classes):
     backbone = mit_b0()
     head = SegFormerHead(
         in_channels=[32, 64, 160, 256],
-        in_index=[0, 1, 2, 3],
         feature_strides=[4, 8, 16, 32],
         channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
-        norm_cfg=dict(type='BN', requires_grad=True),
         align_corners=False,
-        decoder_params=dict(embed_dim=256),
-        loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        embed_dim=256,
     )
-    return SegFormer(backbone, head, test_cfg=ConfigDict(mode='whole'))
+    return SegFormer(backbone, head)
 
 
 def create_segformer_b1(num_classes):
     backbone = mit_b1()
     head = SegFormerHead(
         in_channels=[64, 128, 320, 512],
-        in_index=[0, 1, 2, 3],
         feature_strides=[4, 8, 16, 32],
         channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
-        norm_cfg=dict(type='BN', requires_grad=True),
         align_corners=False,
-        decoder_params=dict(embed_dim=256),
-        loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        embed_dim=256,
     )
-    return SegFormer(backbone, head, test_cfg=ConfigDict(mode='whole'))
+    return SegFormer(backbone, head)
 
 
 def create_segformer_b2(num_classes):
     backbone = mit_b2()
     head = SegFormerHead(
         in_channels=[64, 128, 320, 512],
-        in_index=[0, 1, 2, 3],
         feature_strides=[4, 8, 16, 32],
         channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
-        norm_cfg=dict(type='BN', requires_grad=True),
         align_corners=False,
-        decoder_params=dict(embed_dim=768),
-        loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        embed_dim=768,
     )
-    return SegFormer(backbone, head, test_cfg=ConfigDict(mode='whole'))
+    return SegFormer(backbone, head)
 
 
 def create_segformer_b3(num_classes):
     backbone = mit_b3()
     head = SegFormerHead(
         in_channels=[64, 128, 320, 512],
-        in_index=[0, 1, 2, 3],
         feature_strides=[4, 8, 16, 32],
         channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
-        norm_cfg=dict(type='BN', requires_grad=True),
         align_corners=False,
-        decoder_params=dict(embed_dim=768),
-        loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        embed_dim=768,
     )
-    return SegFormer(backbone, head, test_cfg=ConfigDict(mode='whole'))
+    return SegFormer(backbone, head)
 
 
 def create_segformer_b4(num_classes):
     backbone = mit_b4()
     head = SegFormerHead(
         in_channels=[64, 128, 320, 512],
-        in_index=[0, 1, 2, 3],
         feature_strides=[4, 8, 16, 32],
         channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
-        norm_cfg=dict(type='BN', requires_grad=True),
         align_corners=False,
-        decoder_params=dict(embed_dim=768),
-        loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        embed_dim=768,
     )
-    return SegFormer(backbone, head, test_cfg=ConfigDict(mode='whole'))
+    return SegFormer(backbone, head)
 
 
 def create_segformer_b5(num_classes):
     backbone = mit_b5()
     head = SegFormerHead(
         in_channels=[64, 128, 320, 512],
-        in_index=[0, 1, 2, 3],
         feature_strides=[4, 8, 16, 32],
         channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
-        norm_cfg=dict(type='BN', requires_grad=True),
         align_corners=False,
-        decoder_params=dict(embed_dim=768),
-        loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        embed_dim=768,
     )
-    return SegFormer(backbone, head, test_cfg=ConfigDict(mode='whole'))
+    return SegFormer(backbone, head)
 
 
 def _load_pretrained_weights_(model, model_url, progress):

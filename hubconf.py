@@ -1,4 +1,4 @@
-dependencies = ['torch', 'torchvision', 'mmcv', 'mmseg']
+dependencies = ['torch']
 
 # noinspection PyUnresolvedReferences
 from segformer.model import \

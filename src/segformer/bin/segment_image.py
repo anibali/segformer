@@ -6,6 +6,8 @@ from mmseg.apis import show_result_pyplot
 from mmseg.apis.inference import LoadImage
 from mmseg.core.evaluation import get_palette
 from mmseg.datasets.pipelines import Compose, MultiScaleFlipAug
+from mmseg.models import BaseSegmentor
+from mmseg.ops import resize
 
 from segformer.model import segformer_b2_city
 
@@ -27,10 +29,8 @@ def main():
         LoadImage(),
         MultiScaleFlipAug(
             img_scale=(2048, 512),
-            flip=False,
             transforms=[
                 dict(type='Resize', keep_ratio=True),
-                dict(type='RandomFlip'),
                 dict(type='Normalize', mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True),
                 dict(type='ImageToTensor', keys=['img']),
                 dict(type='Collect', keys=['img']),
@@ -46,9 +46,20 @@ def main():
     else:
         data['img_metas'] = [i.data[0] for i in data['img_metas']]
 
-    result = model(return_loss=False, rescale=True, **data)
+    seg_logit = model(data['img'][0])
+    size = data['img_metas'][0][0]['ori_shape'][:2]
+    seg_logit = resize(
+        seg_logit,
+        size=size,
+        mode='bilinear',
+        align_corners=model.align_corners,
+        warning=False)
+    seg_pred = seg_logit.argmax(dim=1)
+    seg_pred = seg_pred.cpu().numpy()
+    result = list(seg_pred)
 
     model.CLASSES = ['placeholder'] * model.decode_head.num_classes
+    model.show_result = BaseSegmentor.show_result.__get__(model, None)
     show_result_pyplot(model, args.img, result, get_palette('cityscapes'))
 
 
