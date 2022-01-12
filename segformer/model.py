@@ -63,8 +63,6 @@ def create_segformer_b0(num_classes):
     backbone = mit_b0()
     head = SegFormerHead(
         in_channels=[32, 64, 160, 256],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
         align_corners=False,
@@ -77,8 +75,6 @@ def create_segformer_b1(num_classes):
     backbone = mit_b1()
     head = SegFormerHead(
         in_channels=[64, 128, 320, 512],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
         align_corners=False,
@@ -91,8 +87,6 @@ def create_segformer_b2(num_classes):
     backbone = mit_b2()
     head = SegFormerHead(
         in_channels=[64, 128, 320, 512],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
         align_corners=False,
@@ -105,8 +99,6 @@ def create_segformer_b3(num_classes):
     backbone = mit_b3()
     head = SegFormerHead(
         in_channels=[64, 128, 320, 512],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
         align_corners=False,
@@ -119,8 +111,6 @@ def create_segformer_b4(num_classes):
     backbone = mit_b4()
     head = SegFormerHead(
         in_channels=[64, 128, 320, 512],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
         align_corners=False,
@@ -133,8 +123,6 @@ def create_segformer_b5(num_classes):
     backbone = mit_b5()
     head = SegFormerHead(
         in_channels=[64, 128, 320, 512],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
         dropout_ratio=0.1,
         num_classes=num_classes,
         align_corners=False,
