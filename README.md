@@ -26,7 +26,7 @@ model = torch.hub.load('anibali/segformer', 'segformer_b2_city', pretrained=True
 
 There are many SegFormer models to choose from, which vary based on model size (B0--B5) and
 pretraining data: CityScapes, ADE20K, or ImageNet (backbone-only). Please refer to
-[`segformer.model`](src/segformer/model.py) for a full list of available models. It is also
+[`segformer.model`](segformer/model.py) for a full list of available models. It is also
 possible to obtain randomly initialised models by setting `pretrained=False`.
 
 Here's an example of creating a 5-class SegFormer-B1 model. The backbone will use pretrained
