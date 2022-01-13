@@ -36,29 +36,20 @@ def _init_weights(m):
             m.bias.data.zero_()
 
 
-class DepthwiseConv2d(nn.Module):
-    def __init__(self, dim):
-        super().__init__()
-        self.dwconv = nn.Conv2d(dim, dim, (3, 3), padding=(1, 1), bias=True, groups=dim)
-
-    def forward(self, x):
-        return self.dwconv(x)
-
-
 class MixFeedForward(nn.Module):
     def __init__(self, in_features, out_features, hidden_features, dropout_p=0.0):
         super().__init__()
         self.fc1 = nn.Linear(in_features, hidden_features)
-        self.dwconv = DepthwiseConv2d(hidden_features)
+        # Depth-wise convolution
+        self.conv = nn.Conv2d(hidden_features, hidden_features, (3, 3), padding=(1, 1),
+                              bias=True, groups=hidden_features)
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.dropout_p = dropout_p
 
-        self.apply(_init_weights)
-
-    def forward(self, x, H, W):
+    def forward(self, x, h, w):
         x = self.fc1(x)
-        x = rearrange(x, 'b (h w) c -> b c h w', h=H, w=W)
-        x = self.dwconv(x)
+        x = rearrange(x, 'b (h w) c -> b c h w', h=h, w=w)
+        x = self.conv(x)
         x = rearrange(x, 'b c h w -> b (h w) c')
         x = gelu(x)
         x = dropout(x, p=self.dropout_p, training=self.training)
@@ -89,14 +80,12 @@ class EfficientAttention(nn.Module):
             self.sr = nn.Conv2d(dim, dim, kernel_size=sr_ratio_tuple, stride=sr_ratio_tuple)
             self.norm = nn.LayerNorm(dim)
 
-        self.apply(_init_weights)
-
-    def forward(self, x, H, W):
+    def forward(self, x, h, w):
         q = self.q(x)
         q = rearrange(q, ('b hw (m c) -> b m hw c'), m=self.num_heads)
 
         if self.sr_ratio > 1:
-            x = rearrange(x, 'b (h w) c -> b c h w', h=H, w=W)
+            x = rearrange(x, 'b (h w) c -> b c h w', h=h, w=w)
             x = self.sr(x)
             x = rearrange(x, 'b c h w -> b (h w) c')
             x = self.norm(x)
@@ -127,11 +116,9 @@ class TransformerBlock(nn.Module):
         self.norm2 = nn.LayerNorm(dim, eps=1e-6)
         self.mlp = MixFeedForward(dim, dim, hidden_features=dim * mlp_ratio, dropout_p=dropout_p)
 
-        self.apply(_init_weights)
-
-    def forward(self, x, H, W):
-        x = x + self.drop_path(self.attn(self.norm1(x), H, W))
-        x = x + self.drop_path(self.mlp(self.norm2(x), H, W))
+    def forward(self, x, h, w):
+        x = x + self.drop_path(self.attn(self.norm1(x), h, w))
+        x = x + self.drop_path(self.mlp(self.norm2(x), h, w))
         return x
 
 
@@ -146,14 +133,12 @@ class OverlapPatchEmbed(nn.Module):
                               padding=(patch_size[0] // 2, patch_size[1] // 2))
         self.norm = nn.LayerNorm(embed_dim)
 
-        self.apply(_init_weights)
-
     def forward(self, x):
         x = self.proj(x)
-        _, _, H, W = x.shape
+        _, _, h, w = x.shape
         x = rearrange(x, 'b c h w -> b (h w) c')
         x = self.norm(x)
-        return x, H, W
+        return x, h, w
 
 
 class MixTransformer(nn.Module):
@@ -216,14 +201,17 @@ class MixTransformer(nn.Module):
             for i in range(depths[3])])
         self.norm4 = nn.LayerNorm(embed_dims[3], eps=1e-6)
 
+        self.init_weights()
+
+    def init_weights(self):
         self.apply(_init_weights)
 
     def _forward_stage(self, x, patch_embed, block, norm):
-        x, H, W = patch_embed(x)
+        x, h, w = patch_embed(x)
         for i, blk in enumerate(block):
-            x = blk(x, H, W)
+            x = blk(x, h, w)
         x = norm(x)
-        x = rearrange(x, 'b (h w) c -> b c h w', h=H, w=W)
+        x = rearrange(x, 'b (h w) c -> b c h w', h=h, w=w)
         return x
 
     def forward(self, x):

@@ -132,7 +132,32 @@ def create_segformer_b5(num_classes):
 
 def _load_pretrained_weights_(model, model_url, progress):
     state_dict = torch.hub.load_state_dict_from_url(model_url, progress=progress)
-    model.load_state_dict(state_dict)
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        if k.startswith('decode_head'):
+            if k.endswith('.proj.weight'):
+                k = k.replace('.proj.weight', '.weight')
+                v = v[..., None, None]
+            elif k.endswith('.proj.bias'):
+                k = k.replace('.proj.bias', '.bias')
+            elif '.linear_fuse.conv.' in k:
+                k = k.replace('.linear_fuse.conv.', '.linear_fuse.')
+            elif '.linear_fuse.bn.' in k:
+                k = k.replace('.linear_fuse.bn.', '.bn.')
+
+            if '.linear_c4.' in k:
+                k = k.replace('.linear_c4.', '.layers.0.')
+            elif '.linear_c3.' in k:
+                k = k.replace('.linear_c3.', '.layers.1.')
+            elif '.linear_c2.' in k:
+                k = k.replace('.linear_c2.', '.layers.2.')
+            elif '.linear_c1.' in k:
+                k = k.replace('.linear_c1.', '.layers.3.')
+        else:
+            if '.mlp.dwconv.dwconv.' in k:
+                k = k.replace('.mlp.dwconv.dwconv.', '.mlp.conv.')
+        new_state_dict[k] = v
+    model.load_state_dict(new_state_dict)
 
 
 def segformer_b0_ade(pretrained=True, progress=True):
