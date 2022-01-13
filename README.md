@@ -1,8 +1,7 @@
 # SegFormer
 
-This project is an unofficial redistribution of parts of the original code available at
-https://github.com/NVlabs/SegFormer. Its purpose is to make using SegFormer models easier through
-PyTorch Hub.
+This project is an unofficial implementation of SegFormer [^1]. Its purpose is to make using
+SegFormer models easier through PyTorch Hub.
 
 
 ## Usage
@@ -60,3 +59,7 @@ clearly marked as such with a notice at the beginning of the file.
 
 Excepting code copied from third party sources (as described above), the remaining work is made
 available under the terms of the MIT License.
+
+[^1]: Xie, E., Wang, W., Yu, Z., Anandkumar, A., Alvarez, J.M. and Luo, P., 2021. SegFormer: Simple
+      and Efficient Design for Semantic Segmentation with Transformers. arXiv preprint
+      arXiv:2105.15203.
