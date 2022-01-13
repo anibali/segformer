@@ -21,7 +21,7 @@ or
 ```python
 # PyTorch Hub.
 import torch
-model = torch.hub.load('anibali/segformer', 'segformer_b2_city', pretrained=True)
+model = torch.hub.load('anibali/segformer:v1.1.0', 'segformer_b2_city', pretrained=True)
 ```
 
 There are many SegFormer models to choose from, which vary based on model size (B0--B5) and
