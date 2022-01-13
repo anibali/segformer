@@ -40,12 +40,12 @@ class PointwiseLinear2d(nn.Module):
 
 class SegFormerHead(nn.Module):
     def __init__(self, in_channels, num_classes, embed_dim,
-                 dropout_ratio=0.1, align_corners=False):
+                 dropout_p=0.1, align_corners=False):
         super().__init__()
 
         self.in_channels = in_channels
         self.embed_dim = embed_dim
-        self.dropout_ratio = dropout_ratio
+        self.dropout_p = dropout_p
         self.align_corners = align_corners
 
         c1_in_channels, c2_in_channels, c3_in_channels, c4_in_channels = self.in_channels
@@ -83,7 +83,7 @@ class SegFormerHead(nn.Module):
         c1 = self.linear_c1(c1)
 
         x = self.linear_fuse(torch.cat([c4, c3, c2, c1], dim=1))
-        x = dropout(x, p=self.dropout_ratio, training=self.training)
+        x = dropout(x, p=self.dropout_p, training=self.training)
         x = self.linear_pred(x)
 
         return x
