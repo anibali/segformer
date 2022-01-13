@@ -135,7 +135,7 @@ def _load_pretrained_weights_(model, model_url, progress):
     model.load_state_dict(state_dict)
 
 
-def segformer_b0_ade(pretrained=False, progress=True):
+def segformer_b0_ade(pretrained=True, progress=True):
     """Create a SegFormer-B0 model for the ADE20K segmentation task.
     """
     model = create_segformer_b0(num_classes=150)
@@ -144,7 +144,7 @@ def segformer_b0_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b1_ade(pretrained=False, progress=True):
+def segformer_b1_ade(pretrained=True, progress=True):
     """Create a SegFormer-B1 model for the ADE20K segmentation task.
     """
     model = create_segformer_b1(num_classes=150)
@@ -153,7 +153,7 @@ def segformer_b1_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b2_ade(pretrained=False, progress=True):
+def segformer_b2_ade(pretrained=True, progress=True):
     """Create a SegFormer-B2 model for the ADE20K segmentation task.
     """
     model = create_segformer_b2(num_classes=150)
@@ -162,7 +162,7 @@ def segformer_b2_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b3_ade(pretrained=False, progress=True):
+def segformer_b3_ade(pretrained=True, progress=True):
     """Create a SegFormer-B3 model for the ADE20K segmentation task.
     """
     model = create_segformer_b3(num_classes=150)
@@ -171,7 +171,7 @@ def segformer_b3_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b4_ade(pretrained=False, progress=True):
+def segformer_b4_ade(pretrained=True, progress=True):
     """Create a SegFormer-B4 model for the ADE20K segmentation task.
     """
     model = create_segformer_b4(num_classes=150)
@@ -180,7 +180,7 @@ def segformer_b4_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b5_ade(pretrained=False, progress=True):
+def segformer_b5_ade(pretrained=True, progress=True):
     """Create a SegFormer-B5 model for the ADE20K segmentation task.
     """
     model = create_segformer_b5(num_classes=150)
@@ -189,7 +189,7 @@ def segformer_b5_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b0_city(pretrained=False, progress=True):
+def segformer_b0_city(pretrained=True, progress=True):
     """Create a SegFormer-B0 model for the CityScapes segmentation task.
     """
     model = create_segformer_b0(num_classes=19)
@@ -198,7 +198,7 @@ def segformer_b0_city(pretrained=False, progress=True):
     return model
 
 
-def segformer_b1_city(pretrained=False, progress=True):
+def segformer_b1_city(pretrained=True, progress=True):
     """Create a SegFormer-B1 model for the CityScapes segmentation task.
     """
     model = create_segformer_b1(num_classes=19)
@@ -207,7 +207,7 @@ def segformer_b1_city(pretrained=False, progress=True):
     return model
 
 
-def segformer_b2_city(pretrained=False, progress=True):
+def segformer_b2_city(pretrained=True, progress=True):
     """Create a SegFormer-B2 model for the CityScapes segmentation task.
     """
     model = create_segformer_b2(num_classes=19)
@@ -216,7 +216,7 @@ def segformer_b2_city(pretrained=False, progress=True):
     return model
 
 
-def segformer_b3_city(pretrained=False, progress=True):
+def segformer_b3_city(pretrained=True, progress=True):
     """Create a SegFormer-B3 model for the CityScapes segmentation task.
     """
     model = create_segformer_b3(num_classes=19)
@@ -225,7 +225,7 @@ def segformer_b3_city(pretrained=False, progress=True):
     return model
 
 
-def segformer_b4_city(pretrained=False, progress=True):
+def segformer_b4_city(pretrained=True, progress=True):
     """Create a SegFormer-B4 model for the CityScapes segmentation task.
     """
     model = create_segformer_b4(num_classes=19)
@@ -234,7 +234,7 @@ def segformer_b4_city(pretrained=False, progress=True):
     return model
 
 
-def segformer_b5_city(pretrained=False, progress=True):
+def segformer_b5_city(pretrained=True, progress=True):
     """Create a SegFormer-B5 model for the CityScapes segmentation task.
     """
     model = create_segformer_b5(num_classes=19)
