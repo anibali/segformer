@@ -7,7 +7,6 @@
 # This work is licensed under the NVIDIA Source Code License
 # ---------------------------------------------------------------
 
-import math
 from typing import Tuple
 
 import torch
@@ -15,7 +14,7 @@ import torch.nn as nn
 from einops import rearrange
 from torch.nn.functional import dropout, gelu
 
-from segformer.timm import DropPath, to_2tuple, trunc_normal_
+from segformer.timm import DropPath, trunc_normal_
 
 Tuple4i = Tuple[int, int, int, int]
 
@@ -23,17 +22,16 @@ Tuple4i = Tuple[int, int, int, int]
 def _init_weights(m):
     if isinstance(m, nn.Linear):
         trunc_normal_(m.weight, std=0.02)
-        if isinstance(m, nn.Linear) and m.bias is not None:
+        if m.bias is not None:
             nn.init.constant_(m.bias, 0)
     elif isinstance(m, nn.LayerNorm):
-        nn.init.constant_(m.bias, 0)
         nn.init.constant_(m.weight, 1.0)
+        nn.init.constant_(m.bias, 0)
     elif isinstance(m, nn.Conv2d):
-        fan_out = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-        fan_out //= m.groups
-        m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
+        fan_out = (m.kernel_size[0] * m.kernel_size[1] * m.out_channels) // m.groups
+        nn.init.normal_(m.weight, std=(2.0 / fan_out) ** 0.5)
         if m.bias is not None:
-            m.bias.data.zero_()
+            nn.init.constant_(m.bias, 0)
 
 
 class MixFeedForward(nn.Module):
@@ -123,11 +121,8 @@ class TransformerBlock(nn.Module):
 
 
 class OverlapPatchEmbed(nn.Module):
-    def __init__(self, patch_size: int, stride: int, in_chans: int, embed_dim: int):
+    def __init__(self, patch_size: Tuple[int, int], stride: int, in_chans: int, embed_dim: int):
         super().__init__()
-        patch_size = to_2tuple(patch_size)
-        stride = to_2tuple(stride)
-
         self.patch_size = patch_size
         self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=stride,
                               padding=(patch_size[0] // 2, patch_size[1] // 2))
@@ -158,13 +153,13 @@ class MixTransformer(nn.Module):
         self.depths = depths
 
         # Patch embedding layers
-        self.patch_embed1 = OverlapPatchEmbed(patch_size=7, stride=4, in_chans=in_chans,
+        self.patch_embed1 = OverlapPatchEmbed(patch_size=(7, 7), stride=4, in_chans=in_chans,
                                               embed_dim=embed_dims[0])
-        self.patch_embed2 = OverlapPatchEmbed(patch_size=3, stride=2, in_chans=embed_dims[0],
+        self.patch_embed2 = OverlapPatchEmbed(patch_size=(3, 3), stride=2, in_chans=embed_dims[0],
                                               embed_dim=embed_dims[1])
-        self.patch_embed3 = OverlapPatchEmbed(patch_size=3, stride=2, in_chans=embed_dims[1],
+        self.patch_embed3 = OverlapPatchEmbed(patch_size=(3, 3), stride=2, in_chans=embed_dims[1],
                                               embed_dim=embed_dims[2])
-        self.patch_embed4 = OverlapPatchEmbed(patch_size=3, stride=2, in_chans=embed_dims[2],
+        self.patch_embed4 = OverlapPatchEmbed(patch_size=(3, 3), stride=2, in_chans=embed_dims[2],
                                               embed_dim=embed_dims[3])
 
         # Transformer encoder blocks
