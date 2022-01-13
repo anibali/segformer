@@ -1,20 +1,10 @@
-# This file incorporates work from https://github.com/NVlabs/SegFormer which is covered by the
-# following copyright and permission notice:
-#
-# ---------------------------------------------------------------
-# Copyright (c) 2021, NVIDIA Corporation. All rights reserved.
-#
-# This work is licensed under the NVIDIA Source Code License
-# ---------------------------------------------------------------
+from typing import Tuple, Iterable
 
-from typing import Tuple
-
-import torch
 import torch.nn as nn
 from einops import rearrange
 from torch.nn.functional import dropout, gelu
 
-from segformer.timm import DropPath, trunc_normal_
+from segformer.timm import trunc_normal_, drop_path
 
 Tuple4i = Tuple[int, int, int, int]
 
@@ -35,7 +25,8 @@ def _init_weights(m):
 
 
 class MixFeedForward(nn.Module):
-    def __init__(self, in_features, out_features, hidden_features, dropout_p=0.0):
+    def __init__(self, in_features: int, out_features: int, hidden_features: int,
+                 dropout_p: float = 0.0):
         super().__init__()
         self.fc1 = nn.Linear(in_features, hidden_features)
         # Depth-wise convolution
@@ -57,7 +48,8 @@ class MixFeedForward(nn.Module):
 
 
 class EfficientAttention(nn.Module):
-    def __init__(self, dim, num_heads=8, qkv_bias=False, dropout_p=0.0, sr_ratio=1):
+    def __init__(self, dim: int, num_heads: int = 8, qkv_bias: bool = False,
+                 dropout_p: float = 0.0, sr_ratio: int = 1):
         super().__init__()
 
         if dim % num_heads != 0:
@@ -104,19 +96,29 @@ class EfficientAttention(nn.Module):
 
 
 class TransformerBlock(nn.Module):
-    def __init__(self, dim, num_heads, mlp_ratio=4, qkv_bias=False, dropout_p=0.0,
-                 drop_path_p=0.0, sr_ratio=1):
+    def __init__(self, dim: int, num_heads: int, qkv_bias: bool = False,
+                 dropout_p: float = 0.0, drop_path_p: float = 0.0, sr_ratio: int = 1):
         super().__init__()
         self.norm1 = nn.LayerNorm(dim, eps=1e-6)
         self.attn = EfficientAttention(dim, num_heads=num_heads, qkv_bias=qkv_bias,
                                        dropout_p=dropout_p, sr_ratio=sr_ratio)
-        self.drop_path = DropPath(drop_path_p)
+        self.drop_path_p = drop_path_p
         self.norm2 = nn.LayerNorm(dim, eps=1e-6)
-        self.mlp = MixFeedForward(dim, dim, hidden_features=dim * mlp_ratio, dropout_p=dropout_p)
+        self.ffn = MixFeedForward(dim, dim, hidden_features=dim * 4, dropout_p=dropout_p)
 
     def forward(self, x, h, w):
-        x = x + self.drop_path(self.attn(self.norm1(x), h, w))
-        x = x + self.drop_path(self.mlp(self.norm2(x), h, w))
+        skip = x
+        x = self.norm1(x)
+        x = self.attn(x, h, w)
+        x = drop_path(x, p=self.drop_path_p, training=self.training)
+        x = x + skip
+
+        skip = x
+        x = self.norm2(x)
+        x = self.ffn(x, h, w)
+        x = drop_path(x, p=self.drop_path_p, training=self.training)
+        x = x + skip
+
         return x
 
 
@@ -136,13 +138,33 @@ class OverlapPatchEmbed(nn.Module):
         return x, h, w
 
 
+class MixTransformerStage(nn.Module):
+    def __init__(
+        self,
+        patch_embed: OverlapPatchEmbed,
+        blocks: Iterable[TransformerBlock],
+        norm: nn.LayerNorm,
+    ):
+        super().__init__()
+        self.patch_embed = patch_embed
+        self.blocks = nn.ModuleList(blocks)
+        self.norm = norm
+
+    def forward(self, x):
+        x, h, w = self.patch_embed(x)
+        for block in self.blocks:
+            x = block(x, h, w)
+        x = self.norm(x)
+        x = rearrange(x, 'b (h w) c -> b c h w', h=h, w=w)
+        return x
+
+
 class MixTransformer(nn.Module):
     def __init__(
         self,
         in_chans: int = 3,
         embed_dims: Tuple4i = (64, 128, 256, 512),
         num_heads: Tuple4i = (1, 2, 4, 8),
-        mlp_ratios: Tuple4i = (4, 4, 4, 4),
         qkv_bias: bool = False,
         dropout_p: float = 0.0,
         drop_path_p: float = 0.0,
@@ -150,78 +172,41 @@ class MixTransformer(nn.Module):
         sr_ratios: Tuple4i = (8, 4, 2, 1),
     ):
         super().__init__()
-        self.depths = depths
 
-        # Patch embedding layers
-        self.patch_embed1 = OverlapPatchEmbed(patch_size=(7, 7), stride=4, in_chans=in_chans,
-                                              embed_dim=embed_dims[0])
-        self.patch_embed2 = OverlapPatchEmbed(patch_size=(3, 3), stride=2, in_chans=embed_dims[0],
-                                              embed_dim=embed_dims[1])
-        self.patch_embed3 = OverlapPatchEmbed(patch_size=(3, 3), stride=2, in_chans=embed_dims[1],
-                                              embed_dim=embed_dims[2])
-        self.patch_embed4 = OverlapPatchEmbed(patch_size=(3, 3), stride=2, in_chans=embed_dims[2],
-                                              embed_dim=embed_dims[3])
-
-        # Transformer encoder blocks
-        dpr = torch.linspace(0, drop_path_p, sum(depths)).tolist()  # stochastic depth decay rule
-        cur = 0
-        self.block1 = nn.ModuleList([TransformerBlock(
-            dim=embed_dims[0], num_heads=num_heads[0], mlp_ratio=mlp_ratios[0], qkv_bias=qkv_bias,
-            dropout_p=dropout_p, drop_path_p=dpr[cur + i],
-            sr_ratio=sr_ratios[0])
-            for i in range(depths[0])])
-        self.norm1 = nn.LayerNorm(embed_dims[0], eps=1e-6)
-
-        cur += depths[0]
-        self.block2 = nn.ModuleList([TransformerBlock(
-            dim=embed_dims[1], num_heads=num_heads[1], mlp_ratio=mlp_ratios[1], qkv_bias=qkv_bias,
-            dropout_p=dropout_p, drop_path_p=dpr[cur + i],
-            sr_ratio=sr_ratios[1])
-            for i in range(depths[1])])
-        self.norm2 = nn.LayerNorm(embed_dims[1], eps=1e-6)
-
-        cur += depths[1]
-        self.block3 = nn.ModuleList([TransformerBlock(
-            dim=embed_dims[2], num_heads=num_heads[2], mlp_ratio=mlp_ratios[2], qkv_bias=qkv_bias,
-            dropout_p=dropout_p, drop_path_p=dpr[cur + i],
-            sr_ratio=sr_ratios[2])
-            for i in range(depths[2])])
-        self.norm3 = nn.LayerNorm(embed_dims[2], eps=1e-6)
-
-        cur += depths[2]
-        self.block4 = nn.ModuleList([TransformerBlock(
-            dim=embed_dims[3], num_heads=num_heads[3], mlp_ratio=mlp_ratios[3], qkv_bias=qkv_bias,
-            dropout_p=dropout_p, drop_path_p=dpr[cur + i],
-            sr_ratio=sr_ratios[3])
-            for i in range(depths[3])])
-        self.norm4 = nn.LayerNorm(embed_dims[3], eps=1e-6)
+        self.stages = nn.ModuleList()
+        for l in range(len(depths)):
+            blocks = [
+                TransformerBlock(dim=embed_dims[l], num_heads=num_heads[l], qkv_bias=qkv_bias,
+                                 dropout_p=dropout_p, sr_ratio=sr_ratios[l],
+                                 drop_path_p=drop_path_p * (sum(depths[:l])+i) / (sum(depths)-1))
+                for i in range(depths[l])
+            ]
+            if l == 0:
+                patch_embed = OverlapPatchEmbed((7, 7), stride=4, in_chans=in_chans,
+                                                embed_dim=embed_dims[l])
+            else:
+                patch_embed = OverlapPatchEmbed((3, 3), stride=2, in_chans=embed_dims[l - 1],
+                                                embed_dim=embed_dims[l])
+            norm = nn.LayerNorm(embed_dims[l], eps=1e-6)
+            self.stages.append(MixTransformerStage(patch_embed, blocks, norm))
 
         self.init_weights()
 
     def init_weights(self):
         self.apply(_init_weights)
 
-    def _forward_stage(self, x, patch_embed, block, norm):
-        x, h, w = patch_embed(x)
-        for i, blk in enumerate(block):
-            x = blk(x, h, w)
-        x = norm(x)
-        x = rearrange(x, 'b (h w) c -> b c h w', h=h, w=w)
-        return x
-
     def forward(self, x):
-        c1 = self._forward_stage(x, self.patch_embed1, self.block1, self.norm1)
-        c2 = self._forward_stage(c1, self.patch_embed2, self.block2, self.norm2)
-        c3 = self._forward_stage(c2, self.patch_embed3, self.block3, self.norm3)
-        c4 = self._forward_stage(c3, self.patch_embed4, self.block4, self.norm4)
-        return c1, c2, c3, c4
+        outputs = []
+        for stage in self.stages:
+            x = stage(x)
+            outputs.append(x)
+        return outputs
 
 
 def _mit_bx(embed_dims: Tuple4i, depths: Tuple4i) -> MixTransformer:
     return MixTransformer(
         embed_dims=embed_dims,
         num_heads=(1, 2, 5, 8),
-        mlp_ratios=(4, 4, 4, 4),
         qkv_bias=True,
         depths=depths,
         sr_ratios=(8, 4, 2, 1),

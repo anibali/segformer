@@ -154,8 +154,36 @@ def _load_pretrained_weights_(model, model_url, progress):
             elif '.linear_c1.' in k:
                 k = k.replace('.linear_c1.', '.layers.3.')
         else:
+            if 'patch_embed1.' in k:
+                k = k.replace('patch_embed1.', 'stages.0.patch_embed.')
+            elif 'patch_embed2.' in k:
+                k = k.replace('patch_embed2.', 'stages.1.patch_embed.')
+            elif 'patch_embed3.' in k:
+                k = k.replace('patch_embed3.', 'stages.2.patch_embed.')
+            elif 'patch_embed4.' in k:
+                k = k.replace('patch_embed4.', 'stages.3.patch_embed.')
+            elif 'block1.' in k:
+                k = k.replace('block1.', 'stages.0.blocks.')
+            elif 'block2.' in k:
+                k = k.replace('block2.', 'stages.1.blocks.')
+            elif 'block3.' in k:
+                k = k.replace('block3.', 'stages.2.blocks.')
+            elif 'block4.' in k:
+                k = k.replace('block4.', 'stages.3.blocks.')
+            elif 'norm1.' in k:
+                k = k.replace('norm1.', 'stages.0.norm.')
+            elif 'norm2.' in k:
+                k = k.replace('norm2.', 'stages.1.norm.')
+            elif 'norm3.' in k:
+                k = k.replace('norm3.', 'stages.2.norm.')
+            elif 'norm4.' in k:
+                k = k.replace('norm4.', 'stages.3.norm.')
+
             if '.mlp.dwconv.dwconv.' in k:
                 k = k.replace('.mlp.dwconv.dwconv.', '.mlp.conv.')
+
+            if '.mlp.' in k:
+                k = k.replace('.mlp.', '.ffn.')
         new_state_dict[k] = v
     model.load_state_dict(new_state_dict)
 
