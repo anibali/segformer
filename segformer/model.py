@@ -2,8 +2,7 @@ import torch
 from torch import nn
 from torch.nn.functional import interpolate
 
-from segformer.backbones import mit_b0, mit_b1, mit_b2, mit_b3, mit_b4, mit_b5, \
-    MixVisionTransformer
+from segformer.backbones import mit_b0, mit_b1, mit_b2, mit_b3, mit_b4, mit_b5, MixTransformer
 from segformer.heads import SegFormerHead
 
 model_urls = {
@@ -38,7 +37,7 @@ model_urls = {
 
 
 class SegFormer(nn.Module):
-    def __init__(self, backbone: MixVisionTransformer, decode_head: SegFormerHead):
+    def __init__(self, backbone: MixTransformer, decode_head: SegFormerHead):
         super().__init__()
         self.backbone = backbone
         self.decode_head = decode_head
