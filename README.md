@@ -1,8 +1,7 @@
 # SegFormer
 
-This project is an unofficial redistribution of parts of the original code available at
-https://github.com/NVlabs/SegFormer. Its purpose is to make using SegFormer models easier through
-PyTorch Hub.
+This project is an unofficial implementation of SegFormer [^1]. Its purpose is to make using
+SegFormer models easier through PyTorch Hub.
 
 
 ## Usage
@@ -21,7 +20,7 @@ or
 ```python
 # PyTorch Hub.
 import torch
-model = torch.hub.load('anibali/segformer', 'segformer_b2_city', pretrained=True)
+model = torch.hub.load('anibali/segformer:v1.1.0', 'segformer_b2_city', pretrained=True)
 ```
 
 There are many SegFormer models to choose from, which vary based on model size (B0--B5) and
@@ -48,15 +47,6 @@ model.decode_head.rebuild_output_layer_(num_classes=5)
 ```
 
 
-## Copyright and licenses
-
-This project incorporates code copied from the following third party sources:
-
-* https://github.com/rwightman/pytorch-image-models (Apache License 2.0)
-* https://github.com/NVlabs/SegFormer (NVIDIA Source Code License)
-
-Copyright for copied code remains with the original authors. Files containing copied code have been
-clearly marked as such with a notice at the beginning of the file.
-
-Excepting code copied from third party sources (as described above), the remaining work is made
-available under the terms of the MIT License.
+[^1]: Xie, E., Wang, W., Yu, Z., Anandkumar, A., Alvarez, J.M. and Luo, P., 2021. SegFormer: Simple
+      and Efficient Design for Semantic Segmentation with Transformers. arXiv preprint
+      arXiv:2105.15203.

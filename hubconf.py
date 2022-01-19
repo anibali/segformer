@@ -1,4 +1,4 @@
-dependencies = ['torch']
+dependencies = ['torch', 'einops']
 
 # noinspection PyUnresolvedReferences
 from segformer.model import \

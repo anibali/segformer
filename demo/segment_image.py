@@ -14,7 +14,7 @@ original_image = read_image(image_path, ImageReadMode.RGB).float()
 image = normalize(original_image, mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375])
 
 # 2. Run the SegFormer model.
-model = torch.hub.load('anibali/segformer', 'segformer_b2_city', pretrained=True)
+model = torch.hub.load('anibali/segformer:v1.1.0', 'segformer_b2_city', pretrained=True)
 model.eval()
 output = model(image[None, ...])[0]
 # Note that we don't bother passing the model output through a softmax since we are only interested

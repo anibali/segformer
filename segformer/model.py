@@ -2,8 +2,7 @@ import torch
 from torch import nn
 from torch.nn.functional import interpolate
 
-from segformer.backbones import mit_b0, mit_b1, mit_b2, mit_b3, mit_b4, mit_b5, \
-    MixVisionTransformer
+from segformer.backbones import mit_b0, mit_b1, mit_b2, mit_b3, mit_b4, mit_b5, MixTransformer
 from segformer.heads import SegFormerHead
 
 model_urls = {
@@ -38,7 +37,7 @@ model_urls = {
 
 
 class SegFormer(nn.Module):
-    def __init__(self, backbone: MixVisionTransformer, decode_head: SegFormerHead):
+    def __init__(self, backbone: MixTransformer, decode_head: SegFormerHead):
         super().__init__()
         self.backbone = backbone
         self.decode_head = decode_head
@@ -62,10 +61,8 @@ class SegFormer(nn.Module):
 def create_segformer_b0(num_classes):
     backbone = mit_b0()
     head = SegFormerHead(
-        in_channels=[32, 64, 160, 256],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
-        dropout_ratio=0.1,
+        in_channels=(32, 64, 160, 256),
+        dropout_p=0.1,
         num_classes=num_classes,
         align_corners=False,
         embed_dim=256,
@@ -76,10 +73,8 @@ def create_segformer_b0(num_classes):
 def create_segformer_b1(num_classes):
     backbone = mit_b1()
     head = SegFormerHead(
-        in_channels=[64, 128, 320, 512],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
-        dropout_ratio=0.1,
+        in_channels=(64, 128, 320, 512),
+        dropout_p=0.1,
         num_classes=num_classes,
         align_corners=False,
         embed_dim=256,
@@ -90,10 +85,8 @@ def create_segformer_b1(num_classes):
 def create_segformer_b2(num_classes):
     backbone = mit_b2()
     head = SegFormerHead(
-        in_channels=[64, 128, 320, 512],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
-        dropout_ratio=0.1,
+        in_channels=(64, 128, 320, 512),
+        dropout_p=0.1,
         num_classes=num_classes,
         align_corners=False,
         embed_dim=768,
@@ -104,10 +97,8 @@ def create_segformer_b2(num_classes):
 def create_segformer_b3(num_classes):
     backbone = mit_b3()
     head = SegFormerHead(
-        in_channels=[64, 128, 320, 512],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
-        dropout_ratio=0.1,
+        in_channels=(64, 128, 320, 512),
+        dropout_p=0.1,
         num_classes=num_classes,
         align_corners=False,
         embed_dim=768,
@@ -118,10 +109,8 @@ def create_segformer_b3(num_classes):
 def create_segformer_b4(num_classes):
     backbone = mit_b4()
     head = SegFormerHead(
-        in_channels=[64, 128, 320, 512],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
-        dropout_ratio=0.1,
+        in_channels=(64, 128, 320, 512),
+        dropout_p=0.1,
         num_classes=num_classes,
         align_corners=False,
         embed_dim=768,
@@ -132,10 +121,8 @@ def create_segformer_b4(num_classes):
 def create_segformer_b5(num_classes):
     backbone = mit_b5()
     head = SegFormerHead(
-        in_channels=[64, 128, 320, 512],
-        feature_strides=[4, 8, 16, 32],
-        channels=128,
-        dropout_ratio=0.1,
+        in_channels=(64, 128, 320, 512),
+        dropout_p=0.1,
         num_classes=num_classes,
         align_corners=False,
         embed_dim=768,
@@ -145,10 +132,63 @@ def create_segformer_b5(num_classes):
 
 def _load_pretrained_weights_(model, model_url, progress):
     state_dict = torch.hub.load_state_dict_from_url(model_url, progress=progress)
-    model.load_state_dict(state_dict)
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        if k.startswith('decode_head'):
+            if k.endswith('.proj.weight'):
+                k = k.replace('.proj.weight', '.weight')
+                v = v[..., None, None]
+            elif k.endswith('.proj.bias'):
+                k = k.replace('.proj.bias', '.bias')
+            elif '.linear_fuse.conv.' in k:
+                k = k.replace('.linear_fuse.conv.', '.linear_fuse.')
+            elif '.linear_fuse.bn.' in k:
+                k = k.replace('.linear_fuse.bn.', '.bn.')
+
+            if '.linear_c4.' in k:
+                k = k.replace('.linear_c4.', '.layers.0.')
+            elif '.linear_c3.' in k:
+                k = k.replace('.linear_c3.', '.layers.1.')
+            elif '.linear_c2.' in k:
+                k = k.replace('.linear_c2.', '.layers.2.')
+            elif '.linear_c1.' in k:
+                k = k.replace('.linear_c1.', '.layers.3.')
+        else:
+            if 'patch_embed1.' in k:
+                k = k.replace('patch_embed1.', 'stages.0.patch_embed.')
+            elif 'patch_embed2.' in k:
+                k = k.replace('patch_embed2.', 'stages.1.patch_embed.')
+            elif 'patch_embed3.' in k:
+                k = k.replace('patch_embed3.', 'stages.2.patch_embed.')
+            elif 'patch_embed4.' in k:
+                k = k.replace('patch_embed4.', 'stages.3.patch_embed.')
+            elif 'block1.' in k:
+                k = k.replace('block1.', 'stages.0.blocks.')
+            elif 'block2.' in k:
+                k = k.replace('block2.', 'stages.1.blocks.')
+            elif 'block3.' in k:
+                k = k.replace('block3.', 'stages.2.blocks.')
+            elif 'block4.' in k:
+                k = k.replace('block4.', 'stages.3.blocks.')
+            elif 'norm1.' in k:
+                k = k.replace('norm1.', 'stages.0.norm.')
+            elif 'norm2.' in k:
+                k = k.replace('norm2.', 'stages.1.norm.')
+            elif 'norm3.' in k:
+                k = k.replace('norm3.', 'stages.2.norm.')
+            elif 'norm4.' in k:
+                k = k.replace('norm4.', 'stages.3.norm.')
+
+            if '.mlp.dwconv.dwconv.' in k:
+                k = k.replace('.mlp.dwconv.dwconv.', '.mlp.conv.')
+
+            if '.mlp.' in k:
+                k = k.replace('.mlp.', '.ffn.')
+        new_state_dict[k] = v
+    model.load_state_dict(new_state_dict)
 
 
-def segformer_b0_ade(pretrained=False, progress=True):
+def segformer_b0_ade(pretrained=True, progress=True):
     """Create a SegFormer-B0 model for the ADE20K segmentation task.
     """
     model = create_segformer_b0(num_classes=150)
@@ -157,7 +197,7 @@ def segformer_b0_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b1_ade(pretrained=False, progress=True):
+def segformer_b1_ade(pretrained=True, progress=True):
     """Create a SegFormer-B1 model for the ADE20K segmentation task.
     """
     model = create_segformer_b1(num_classes=150)
@@ -166,7 +206,7 @@ def segformer_b1_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b2_ade(pretrained=False, progress=True):
+def segformer_b2_ade(pretrained=True, progress=True):
     """Create a SegFormer-B2 model for the ADE20K segmentation task.
     """
     model = create_segformer_b2(num_classes=150)
@@ -175,7 +215,7 @@ def segformer_b2_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b3_ade(pretrained=False, progress=True):
+def segformer_b3_ade(pretrained=True, progress=True):
     """Create a SegFormer-B3 model for the ADE20K segmentation task.
     """
     model = create_segformer_b3(num_classes=150)
@@ -184,7 +224,7 @@ def segformer_b3_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b4_ade(pretrained=False, progress=True):
+def segformer_b4_ade(pretrained=True, progress=True):
     """Create a SegFormer-B4 model for the ADE20K segmentation task.
     """
     model = create_segformer_b4(num_classes=150)
@@ -193,7 +233,7 @@ def segformer_b4_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b5_ade(pretrained=False, progress=True):
+def segformer_b5_ade(pretrained=True, progress=True):
     """Create a SegFormer-B5 model for the ADE20K segmentation task.
     """
     model = create_segformer_b5(num_classes=150)
@@ -202,7 +242,7 @@ def segformer_b5_ade(pretrained=False, progress=True):
     return model
 
 
-def segformer_b0_city(pretrained=False, progress=True):
+def segformer_b0_city(pretrained=True, progress=True):
     """Create a SegFormer-B0 model for the CityScapes segmentation task.
     """
     model = create_segformer_b0(num_classes=19)
@@ -211,7 +251,7 @@ def segformer_b0_city(pretrained=False, progress=True):
     return model
 
 
-def segformer_b1_city(pretrained=False, progress=True):
+def segformer_b1_city(pretrained=True, progress=True):
     """Create a SegFormer-B1 model for the CityScapes segmentation task.
     """
     model = create_segformer_b1(num_classes=19)
@@ -220,7 +260,7 @@ def segformer_b1_city(pretrained=False, progress=True):
     return model
 
 
-def segformer_b2_city(pretrained=False, progress=True):
+def segformer_b2_city(pretrained=True, progress=True):
     """Create a SegFormer-B2 model for the CityScapes segmentation task.
     """
     model = create_segformer_b2(num_classes=19)
@@ -229,7 +269,7 @@ def segformer_b2_city(pretrained=False, progress=True):
     return model
 
 
-def segformer_b3_city(pretrained=False, progress=True):
+def segformer_b3_city(pretrained=True, progress=True):
     """Create a SegFormer-B3 model for the CityScapes segmentation task.
     """
     model = create_segformer_b3(num_classes=19)
@@ -238,7 +278,7 @@ def segformer_b3_city(pretrained=False, progress=True):
     return model
 
 
-def segformer_b4_city(pretrained=False, progress=True):
+def segformer_b4_city(pretrained=True, progress=True):
     """Create a SegFormer-B4 model for the CityScapes segmentation task.
     """
     model = create_segformer_b4(num_classes=19)
@@ -247,7 +287,7 @@ def segformer_b4_city(pretrained=False, progress=True):
     return model
 
 
-def segformer_b5_city(pretrained=False, progress=True):
+def segformer_b5_city(pretrained=True, progress=True):
     """Create a SegFormer-B5 model for the CityScapes segmentation task.
     """
     model = create_segformer_b5(num_classes=19)
